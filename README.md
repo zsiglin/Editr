@@ -1,2 +1,2 @@
 # Edit
-Collaborative code editor built in Meteor.js with Ace
+Collaborative code editor built in Meteor.js
