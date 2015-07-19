@@ -1,37 +1,33 @@
 Docs = new Mongo.Collection("docs");
 
 if(Meteor.isServer) {
-  Meteor.publish("docs", function () {
-    return Docs.find();
+  Meteor.publish("docs", function() {
+    return Docs.find({_id: "t39p6d"}); 
   });
-}
 
-if (Meteor.isClient) {
-  Meteor.subscribe("docs");
+  function generateRandomKey(){
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    var key = "";
 
-  Template.task.events({
-    "click .toggle-checked": function () {
-      // Set the checked property to the opposite of its current value
-      Meteor.call("setChecked", this._id, ! this.checked);
-    },
-    "click .delete": function () {
-      Meteor.call("deleteTask", this._id);
-    },
-    "click .toggle-private": function () {
-      Meteor.call("setPrivate", this._id, ! this.private);
+    for(var i=0; i<6; i++){
+      key += chars.charAt(Math.floor(Math.random() * 62));
     }
-  });
+      
+    return key;
+  }
 }
 
 Meteor.methods({
-  addDoc: function (text) {
-    Docs.insert({
-      text: text,
-      createdAt: new Date()
+  addDoc: function(sessionId){
+    return Docs.insert({
+      _id: generateRandomKey(),
+      content: "",
+      sessionId: sessionId,
+      created: new Date()
     });
   },
 
-  setChecked: function (taskId, setChecked) {
-    Docs.update(taskId, { $set: { checked: setChecked} });
+  updateDoc: function (docId, content, sessionId){
+    Docs.update(docId, { $set: { content: content, sessionId: sessionId } });
   }
 });
