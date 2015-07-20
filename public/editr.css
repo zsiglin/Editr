@@ -1,27 +1,26 @@
 body {
 	background-color: #272822;
+	color: #FFF;
 	font-family: arial;
+	font-size: 15px;
 }
 
-#name {
+.left{
 	float: left;
 }
 
-#options {
+.right{
 	float: right;
-	color: white;
-	z-index: 1000;
 }
 
 #syntax{
 	width: 300px;
-	float: right;
-	border: 1px solid black;
 }
 
-#editor { 
+#editor{ 
 	position: absolute;
-	top: 35px;
+	border-top: 1px solid #8F908A;
+	top: 40px;
 	right: 0;
 	bottom: 0px;
 	left: 0;

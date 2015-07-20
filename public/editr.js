@@ -1,88 +1,123 @@
-+function(){
-  var createNewDoc = function(){
-    Meteor.call("addDoc", session, function(error, docId){
-      monitorChanges(docId);
+var app = {
+  addDoc: function(){
+    Meteor.call("addDoc", "javascript", function(error, docId){
+      history.pushState({}, "ID", "?docId=" + docId);
+
+      app.docId = docId;
+      app.monitorChanges();
     });
-  }
+  },
 
-  var monitorChanges = function(docId){
-    var query = Docs.find({_id : docId});
-    console.log(query.content)
+  monitorChanges: function(){
+    var docId = this.docId;
 
-    query.observe({        
-      changed: function(newDoc, oldIndex, oldDoc) {
-        if(newDoc.sessionId != session){
-          editor.setValue(newDoc.content);
+    Meteor.subscribe("docs", docId, function(){ 
+      var doc = Docs.find(docId);
+      var docProperties = doc.fetch();
+
+      // invalid id => add a new document
+      if(docProperties.length == 0){
+        app.addDoc();
+      } else {
+        var syntax = docProperties[0].syntax;
+        console.log(syntax)
+        app.changeSyntax(syntax);
+      }
+
+      doc.observe({        
+        changed: function(newDoc, oldIndex, oldDoc){
+          var delta = newDoc.delta;
+          var deltaSessionId = delta.sessionId;
+          var syntax = newDoc.syntax;
+
+          if(syntax != app.syntaxSelect.value){
+            app.changeSyntax(syntax);
+          }
+
+          if(deltaSessionId != app.sessionId){
+            app.editor.getSession().getDocument().applyDelta(delta);
+          }
         }
-      }
+      });
+
+      app.editor.getSession().on("change", function(delta){
+        if(app.editor.curOp && app.editor.curOp.command.name){
+          delta.sessionId = app.sessionId;
+          Meteor.call("postDocDelta", docId, delta);
+        }
+      });
     });
+  },
 
-    editor.getSession().on("change", function(){
-      if(editor.curOp && editor.curOp.command.name){
-        var editorVal = editor.getValue();
-        Meteor.call("updateDoc", docId, editorVal, session);
-      }
+  retrieveDocContent: function(){
+    Meteor.call("retrieveDocContent", this.docId, function(err, content){ 
+      app.editor.getSession().setValue(content);
     });
-  }
+  },
 
-  var initDoc = function(){
-    var docId = getUrlVars()["docId"];
+  initDoc: function(){
+    if(this.docId){
+      this.monitorChanges();
+      this.retrieveDocContent();
 
-    if(docId){
-      monitorChanges(docId);
     } else {
-      createNewDoc();
+      this.addDoc();
     }
-  }
+  },
 
-  var setEventListeners = function(){
-    syntaxSelect.addEventListener("change", function(){
+  setEventListeners: function(){
+    this.syntaxSelect.addEventListener("change", function(){
       var index = this.selectedIndex;
       var val = this.options[index].value;
-      changeSyntax(val);
+
+      app.changeSyntax(val);
+      Meteor.call("changeSyntax", app.docId, val);
     });
-  }
+  },
 
-  var changeSyntax = function(syntax){
-    syntaxSelect.value = localStorage.syntax = syntax;
-    editor.getSession().setMode("ace/mode/" + syntax);
-    editor.focus();
-  }
+  changeSyntax: function(syntax){
+    this.syntaxSelect.value = syntax;
+    this.editor.getSession().setMode("ace/mode/" + syntax);
+    this.editor.focus();
+  },
 
-  var getUrlVars = function(){
+  getUrlVars: function(){
     var vars = {};
     var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi,    
     function(m,key,value) {
       vars[key] = value;
     });
     return vars;
-  }
+  },
 
-  var init = function(){
+  init: function(){
+    var t = this;
+    var d = document;
+
     // ace editor init
-    syntaxSelect = document.querySelector("#syntax");
-    editor = ace.edit("editor");
-    editor.setTheme("ace/theme/monokai");
-    editor.setFontSize("16px");
-    editor.setShowPrintMargin(false);
-    editor.focus();
+    t.editor = ace.edit("editor");
+    t.editor.setTheme("ace/theme/monokai");
+    t.editor.setFontSize("15px");
+    t.editor.setShowPrintMargin(false);
+    t.editor.$blockScrolling = Infinity;
+    t.editor.focus();
 
-    // meteor init
-    Meteor.subscribe("docs");
-    session = Meteor.default_connection._lastSessionId;
+    // selectors
+    t.syntaxSelect = d.querySelector("#syntax");
 
-    // event listeners
-    setEventListeners();
+    // generate random session id for deltas
+    this.sessionId = Math.floor(Math.random() * 9000000000) + 1000000000;
 
-    // set saved/default syntax
-    changeSyntax(localStorage.syntax || "javascript");
+    // get url params
+    this.docId = this.getUrlVars()["docId"];
 
-    // new doc/load doc
-    initDoc();
-  }
+    t.initDoc();
+    t.setEventListeners();
+  } 
+};
 
-  window.addEventListener("load", init);
-}();
+window.addEventListener("load", function() { app.init(); });
+
   
 
 
