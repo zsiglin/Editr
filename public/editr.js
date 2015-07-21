@@ -1,6 +1,7 @@
 var app = {
   addDoc: function(){
     Meteor.call("addDoc", "javascript", function(error, docId){
+      // push new doc id out to url
       history.pushState({}, "ID", "?docId=" + docId);
 
       app.docId = docId;
@@ -117,7 +118,3 @@ var app = {
 };
 
 window.addEventListener("load", function() { app.init(); });
-
-  
-
-
