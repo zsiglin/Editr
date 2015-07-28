@@ -21,22 +21,23 @@ var app = {
         app.addDoc();
       } else {
         var syntax = docProperties[0].syntax;
-        console.log(syntax)
         app.changeSyntax(syntax);
       }
 
       doc.observe({        
         changed: function(newDoc, oldIndex, oldDoc){
           var delta = newDoc.delta;
-          var deltaSessionId = delta.sessionId;
           var syntax = newDoc.syntax;
 
           if(syntax != app.syntaxSelect.value){
             app.changeSyntax(syntax);
           }
 
-          if(deltaSessionId != app.sessionId){
-            app.editor.getSession().getDocument().applyDelta(delta);
+          if(delta){
+	          var deltaSessionId = delta.sessionId;
+	          if(deltaSessionId != app.sessionId){
+	            app.editor.getSession().getDocument().applyDelta(delta);
+	          }
           }
         }
       });

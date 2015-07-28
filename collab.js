@@ -16,7 +16,11 @@ if(Meteor.isServer) {
     return key;
   }
 
-  function applyDelta(docLines, delta){    
+  function applyDelta(docLines, delta){
+  	if(!delta){
+  		return;
+  	}
+
     var row = delta.start.row;
     var startColumn = delta.start.column;
     var line = docLines[row] || "";
@@ -63,7 +67,8 @@ Meteor.methods({
 
   changeSyntax: function(docId, syntax){
     Docs.update(docId, { $set: {
-        syntax: syntax
+        syntax: syntax,
+        delta: null
     }});
   },
 
